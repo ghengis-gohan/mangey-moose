@@ -1,0 +1,15 @@
+USB camera (/dev/video0)
+        │
+        ▼
+[yolo-infer OR traffic-infer container]
+   reads frames → runs model → annotates → encodes (NVENC) → RTSP publish
+        │
+        ▼  rtsp://127.0.0.1:8554/infer  (loopback, host network)
+        │
+[mediamtx container]
+   receives publish → fans out to any subscriber
+        │
+        ▼  rtsp://$JETSON_IP:8554/infer   (over WiFi/radio link)
+        │
+[Ground station laptop]
+   ffplay / VLC / browser (WHEP on :8889)

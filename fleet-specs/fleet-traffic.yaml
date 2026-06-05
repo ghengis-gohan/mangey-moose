@@ -1,0 +1,84 @@
+# fleet-traffic.yaml
+#
+# Applies to any device labeled `inference=traffic` AND `purpose=drone-edge`.
+# Deploys: mediamtx (always-on, IDENTICAL to yolo fleet) + traffic-infer.
+# NO model-init — traffic-infer self-seeds its own model cache.
+
+apiVersion: flightctl.io/v1alpha1
+kind: Fleet
+metadata:
+  name: drone-edge-traffic
+  labels:
+    purpose: drone-edge
+    inference: traffic
+spec:
+  selector:
+    matchLabels:
+      purpose: drone-edge
+      inference: traffic
+
+  template:
+    metadata:
+      labels:
+        purpose: drone-edge
+        inference: traffic
+    spec:
+      os:
+        image: quay.io/YOUR_ORG/jetson-bootc:latest
+
+      applications:
+        # --- MediaMTX: IDENTICAL compose content to fleet-yolo.yaml ------
+        # Must match byte-for-byte so fleet transition doesn't cycle it.
+        - name: mediamtx
+          inline:
+            - path: compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  mediamtx:
+                    image: quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1
+                    container_name: drone-edge-mediamtx
+                    network_mode: host
+                    restart: unless-stopped
+
+        # --- Traffic inference -------------------------------------------
+        - name: traffic-inference
+          inline:
+            - path: compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  traffic-infer:
+                    image: quay.io/YOUR_ORG/drone-edge-traffic-infer:v1
+                    container_name: drone-edge-traffic-infer
+                    network_mode: host
+                    restart: unless-stopped
+                    devices:
+                      - /dev/video0
+                      - nvidia.com/gpu=all
+                    group_add:
+                      - video
+                    security_opt:
+                      - label=disable
+                    volumes:
+                      - /var/lib/drone-edge/models:/models:z
+                    environment:
+                      RTSP_URL: "rtsp://127.0.0.1:8554/infer"
+                      SRC: "/dev/video0"
+                      W: "1280"
+                      H: "720"
+                      FPS: "10"
+                      CAP_FOURCC: "YUYV"
+                      BITRATE_BPS: "2500000"
+                      MODEL_CACHE_DIR: "/models/traffic"
+                      GST_DEBUG: "2"
+
+  rolloutPolicy:
+    deviceSelection:
+      strategy: BatchSequence
+      sequence:
+        - selector:
+            matchLabels:
+              inference: traffic
+          limit: 100%
+    successThreshold: 100%

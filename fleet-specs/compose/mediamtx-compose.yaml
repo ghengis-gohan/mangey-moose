@@ -1,0 +1,13 @@
+# MediaMTX RTSP/HLS/WHEP server — always on.
+# This container is duplicated in both yolo and traffic fleets. Content must
+# match byte-for-byte so the flightctl agent treats it as unchanged during
+# fleet transitions and doesn't cycle it unnecessarily.
+version: "3.8"
+
+services:
+  mediamtx:
+    image: quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1
+    container_name: drone-edge-mediamtx
+    network_mode: host
+    restart: unless-stopped
+    # No volumes, no devices, no GPU. Pure userspace RTSP server.

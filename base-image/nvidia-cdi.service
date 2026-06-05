@@ -1,0 +1,12 @@
+[Unit]
+Description=Generate the nvidia cdi yaml file
+Requires=multi-user.target
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=nvidia-ctk cdi generate --output=/etc/cdi/nvidia
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

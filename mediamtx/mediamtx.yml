@@ -1,0 +1,80 @@
+# mediamtx/mediamtx.yml
+#
+# Minimal config for the drone-edge project.
+# Full reference: https://github.com/bluenviron/mediamtx/blob/main/mediamtx.yml
+#
+# What we want:
+#   - RTSP on :8554 (publish + read), TCP-only for reliability over wifi
+#   - HLS on :8888 (browser viewer, ~2-5s latency)
+#   - WebRTC/WHEP on :8889 (browser viewer, sub-second latency)
+#   - HTTP API on 127.0.0.1:9997 for local health checks
+#   - No RTMP, no SRT, no recording, no playback
+#   - No auth (lab/drone use; add auth before exposing to any untrusted network)
+
+###############################################################################
+# Logging
+###############################################################################
+logLevel: info
+logDestinations: [stdout]
+
+###############################################################################
+# HTTP API (health checks, stream introspection)
+# Bound to loopback so it is never reachable off-device.
+###############################################################################
+api: yes
+apiAddress: 127.0.0.1:9997
+
+###############################################################################
+# Metrics + pprof — off by default. Flip to yes for debugging.
+###############################################################################
+metrics: no
+pprof: no
+
+###############################################################################
+# Global disables for protocols we do not use
+###############################################################################
+rtmp: no
+srt: no
+webrtc: yes
+hls: yes
+rtsp: yes
+
+###############################################################################
+# RTSP
+###############################################################################
+# Force TCP. UDP is lower overhead but loses packets on a shaky wifi link,
+# which corrupts frames visibly. TCP retransmits. For a drone we want TCP.
+rtspTransports: [tcp]
+rtspAddress: :8554
+
+# Tighten queue so we don't buffer too much on the Jetson if a viewer stalls.
+writeQueueSize: 512
+
+###############################################################################
+# HLS (browser viewer at http://<jetson>:8888/infer)
+###############################################################################
+hlsAddress: :8888
+hlsAllowOrigin: '*'
+# Low-latency HLS. Adds a few seconds over WebRTC but works everywhere.
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+
+###############################################################################
+# WebRTC / WHEP (browser viewer at http://<jetson>:8889/infer)
+###############################################################################
+webrtcAddress: :8889
+webrtcAllowOrigin: '*'
+# No external ICE servers needed; the Jetson and ground station are on the
+# same LAN. Leaving ICE servers empty means pure host-candidate WebRTC.
+webrtcICEServers2: []
+
+###############################################################################
+# Paths
+# all_others is a wildcard — any path name works (/infer, /yolo, /traffic, ...)
+# Inference container publishes to whatever path it picks; ground station reads
+# the same path. Keeps the contract flexible.
+###############################################################################
+paths:
+  all_others:

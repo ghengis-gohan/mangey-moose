@@ -1,0 +1,30 @@
+# YOLOv8 inference. Reads /dev/video0, publishes to rtsp://127.0.0.1:8554/infer.
+# Requires mediamtx to be up; will restart on its own if it isn't yet.
+version: "3.8"
+
+services:
+  yolo-infer:
+    image: quay.io/YOUR_ORG/drone-edge-yolo-infer:v1
+    container_name: drone-edge-yolo-infer
+    network_mode: host
+    restart: unless-stopped
+    devices:
+      - /dev/video0
+      - nvidia.com/gpu=all
+    group_add:
+      - video
+    security_opt:
+      - label=disable
+    volumes:
+      - /var/lib/drone-edge/models:/models:ro,z
+    environment:
+      RTSP_URL: "rtsp://127.0.0.1:8554/infer"
+      SRC: "/dev/video0"
+      MODEL: "/models/yolov8n.engine"
+      W: "1280"
+      H: "720"
+      FPS: "10"
+      CAP_FOURCC: "YUYV"
+      BITRATE: "2500k"
+      ENCODER: "auto"
+      CAM_FAIL_THRESHOLD: "30"

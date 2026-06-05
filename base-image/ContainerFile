@@ -1,0 +1,103 @@
+# base-image/Containerfile
+#
+# Bootc base image for NVIDIA Jetson Orin Nano Dev Kit.
+# Role: provides the host OS, GPU/CDI stack, firewall, and flightctl-agent.
+# Application containers (mediamtx, yolo-infer, traffic-infer, model-init)
+# are pulled and managed by Red Hat Edge Manager via flightctl-agent.
+
+FROM registry.redhat.io/rhel9/rhel-bootc:9.4
+
+ARG RH_REG_USERNAME
+ARG RH_REG_PASSWD
+ARG USER_PASSWD
+
+# --- Base OS packages ---------------------------------------------------------
+# weston:                minimal Wayland compositor (useful for local display/debug)
+# podman:                container runtime that flightctl-agent drives
+# NetworkManager-wifi:   WiFi support
+# firewalld:             host firewall
+# wpa_supplicant:        WPA2/WPA3 auth for WiFi
+# pciutils:              lspci for GPU debugging
+# flightctl-agent:       Red Hat Edge Manager device agent
+# vim, tmux, jq:         quality-of-life for on-device debugging
+# usbutils:              lsusb for camera debugging
+# v4l-utils:             v4l2-ctl for camera debugging
+RUN subscription-manager register --username "${RH_REG_USERNAME}" --password "${RH_REG_PASSWD}" --auto-attach && \
+    subscription-manager repos --enable codeready-builder-for-rhel-9-aarch64-rpms && \
+    dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+    dnf install -y \
+        weston \
+        podman \
+        NetworkManager-wifi \
+        firewalld \
+        wpa_supplicant \
+        pciutils \
+        usbutils \
+        v4l-utils \
+        vim-enhanced \
+        tmux \
+        jq \
+        flightctl-agent && \
+    dnf clean all && \
+    subscription-manager unregister || true
+
+# --- NVIDIA Jetson stack ------------------------------------------------------
+# nvidia-jetpack-kmod:          kernel modules for Orin iGPU
+# nvidia-jetpack-all:           full JetPack userspace (CUDA, cuDNN, TensorRT)
+# nvidia-container-toolkit:     CDI integration so podman can see the GPU
+RUN curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo \
+      -o /etc/yum.repos.d/nvidia-container-toolkit.repo && \
+    curl -s -L https://repo.download.nvidia.com/jetson/rhel-9.4/jp6.1/nvidia-l4t.repo \
+      -o /etc/yum.repos.d/nvidia-l4t.repo && \
+    dnf -y install nvidia-jetpack-kmod nvidia-jetpack-all nvidia-container-toolkit && \
+    dnf clean all
+
+# Prevent dnf from pulling a generic kernel that would break the Jetson BSP
+RUN echo "exclude=kernel* kmod-kvdo" >> /etc/yum.conf
+
+# --- CDI regeneration service -------------------------------------------------
+# The CDI spec (/etc/cdi/nvidia.yaml) must be regenerated if drivers update.
+# nvidia-cdi.service handles this on boot.
+COPY nvidia-cdi.service /usr/lib/systemd/system/nvidia-cdi.service
+RUN systemctl enable nvidia-cdi.service
+
+# --- flightctl-agent (Red Hat Edge Manager) -----------------------------------
+COPY config.yaml /etc/flightctl/config.yaml
+RUN systemctl enable flightctl-agent.service
+
+# --- Persistent host directories for application data -------------------------
+# Models built by the model-init container live here and are shared (read-only)
+# with the inference containers. Survives image updates because /var is persisted.
+RUN mkdir -p /var/lib/drone-edge/models && \
+    chmod 755 /var/lib/drone-edge /var/lib/drone-edge/models
+
+# --- Default user -------------------------------------------------------------
+RUN useradd -m -d /var/home/redhat -G wheel,video redhat && \
+    echo "redhat:${USER_PASSWD}" | chpasswd || true
+
+# Enable passwordless sudo for wheel (convenient for on-device debugging).
+# Remove this line if you want sudo to require a password.
+RUN sed -i 's/^# *\(%wheel.*NOPASSWD.*\)/\1/' /etc/sudoers
+
+# --- Firewall -----------------------------------------------------------------
+# 22:   SSH
+# 5900: VNC (if you run weston + a VNC server for local GUI debug)
+# 8554: RTSP (MediaMTX publish/subscribe)
+# 8888: HLS (MediaMTX browser viewer)
+# 8889: WHEP (MediaMTX low-latency browser viewer)
+# Trusted sources 10.42.0.0/16 and 169.254.169.1 are flightctl-agent internal nets.
+RUN firewall-offline-cmd --zone=public --add-port=22/tcp && \
+    firewall-offline-cmd --zone=public --add-port=5900/tcp && \
+    firewall-offline-cmd --zone=public --add-port=8554/tcp && \
+    firewall-offline-cmd --zone=public --add-port=8888/tcp && \
+    firewall-offline-cmd --zone=public --add-port=8889/tcp && \
+    firewall-offline-cmd --zone=trusted --add-source=10.42.0.0/16 && \
+    firewall-offline-cmd --zone=trusted --add-source=169.254.169.1
+
+# --- Enable services ----------------------------------------------------------
+RUN systemctl enable NetworkManager.service && \
+    systemctl enable firewalld.service && \
+    systemctl enable podman.socket
+
+# bootc linter: verify the image
+RUN bootc container lint

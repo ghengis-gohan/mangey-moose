@@ -1,0 +1,51 @@
+# traffic-infer/Containerfile
+#
+# Swappable inference workload #2.
+# Reads /dev/video0, runs the DeepStream resnet10_4class primary detector
+# (Vehicle, Bicycle, Person, RoadSign — the sample that literally ships
+# with DeepStream), and publishes annotated H.264 to MediaMTX at
+# rtsp://127.0.0.1:8554/infer.
+#
+# Shared contract with yolo-infer:
+#   INPUT:  /dev/video0 (V4L2)
+#   OUTPUT: rtsp://127.0.0.1:8554/infer (H.264 over RTSP/TCP)
+#   MODELS: /models (read-write; engine cache lives under /models/traffic/)
+#
+# Base image matches JetPack 6.1 (L4T r36.4). DeepStream 7.1 is the
+# supported pairing per NVIDIA's compatibility matrix.
+
+ARG BASE_IMAGE=nvcr.io/nvidia/deepstream-l4t:7.1-samples
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Deps we need beyond what the deepstream-samples image carries:
+# - gstreamer1.0-rtsp:  provides rtspclientsink (RTSP publisher)
+# - tini:               PID 1 for clean signal propagation
+# - v4l-utils:          v4l2-ctl for debugging the camera inside the container
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      gstreamer1.0-rtsp \
+      tini \
+      v4l-utils \
+      ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY pipeline.sh /app/pipeline.sh
+RUN chmod +x /app/pipeline.sh
+
+# Runtime defaults. Override via Edge Manager app spec env.
+ENV RTSP_URL="rtsp://127.0.0.1:8554/infer" \
+    SRC="/dev/video0" \
+    W="1280" \
+    H="720" \
+    FPS="10" \
+    CAP_FOURCC="YUYV" \
+    BITRATE_BPS="2500000" \
+    MODEL_CACHE_DIR="/models/traffic" \
+    DS_SAMPLES_DIR="/opt/nvidia/deepstream/deepstream/samples" \
+    GST_DEBUG="2"
+
+VOLUME ["/models"]
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/pipeline.sh"]

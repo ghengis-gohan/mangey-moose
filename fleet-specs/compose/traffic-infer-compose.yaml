@@ -1,0 +1,30 @@
+# DeepStream resnet10_4class inference. Reads /dev/video0, publishes to the
+# SAME RTSP path as yolo-infer so the ground station URL doesn't change.
+version: "3.8"
+
+services:
+  traffic-infer:
+    image: quay.io/YOUR_ORG/drone-edge-traffic-infer:v1
+    container_name: drone-edge-traffic-infer
+    network_mode: host
+    restart: unless-stopped
+    devices:
+      - /dev/video0
+      - nvidia.com/gpu=all
+    group_add:
+      - video
+    security_opt:
+      - label=disable
+    volumes:
+      # RW because nvinfer needs to write the auto-built TRT engine on first run.
+      - /var/lib/drone-edge/models:/models:z
+    environment:
+      RTSP_URL: "rtsp://127.0.0.1:8554/infer"
+      SRC: "/dev/video0"
+      W: "1280"
+      H: "720"
+      FPS: "10"
+      CAP_FOURCC: "YUYV"
+      BITRATE_BPS: "2500000"
+      MODEL_CACHE_DIR: "/models/traffic"
+      GST_DEBUG: "2"

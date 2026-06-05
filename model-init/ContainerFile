@@ -1,0 +1,61 @@
+# model-init/Containerfile
+#
+# One-shot container: exports Ultralytics YOLO .pt weights into a TensorRT
+# .engine tuned for THIS device's GPU + TRT version, then exits.
+#
+# Why on-device: TensorRT engines are not portable. They must be built against
+# the same CUDA/TRT stack that will run inference. Building in CI against a
+# different stack produces engines that fail or silently fall back to PyTorch.
+#
+# Idempotent: on second+ run, detects existing valid engine and exits 0.
+#
+# Must use the SAME base image tag as yolo-infer/ so the TRT runtime versions
+# match between the builder and the consumer.
+
+ARG BASE_IMAGE=nvcr.io/nvidia/l4t-ml:r36.2.0-py3
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Minimal OS deps. l4t-ml already has Python, torch, CUDA, TRT.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ultralytics brings the YOLO export machinery. --no-deps to avoid clobbering
+# the Jetson-tuned torch/torchvision that ship in l4t-ml.
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install --no-cache-dir --no-deps ultralytics && \
+    python3 -m pip install --no-cache-dir \
+      'numpy<2' \
+      pyyaml \
+      tqdm \
+      requests \
+      psutil \
+      pandas \
+      matplotlib \
+      seaborn \
+      py-cpuinfo
+
+WORKDIR /app
+
+# Bundle the source weights directly in the image for deterministic,
+# offline-capable exports.
+COPY yolov8n.pt /app/yolov8n.pt
+COPY export_engine.sh /app/export_engine.sh
+RUN chmod +x /app/export_engine.sh
+
+# Runtime defaults. Override via Edge Manager app spec if needed.
+ENV SRC_WEIGHTS="/app/yolov8n.pt" \
+    OUT_DIR="/models" \
+    OUT_NAME="yolov8n.engine" \
+    IMG_SIZE="640" \
+    HALF="true" \
+    WORKSPACE_GB="2"
+
+# Inference container will mount this read-only; we mount it read-write.
+VOLUME ["/models"]
+
+ENTRYPOINT ["/app/export_engine.sh"]

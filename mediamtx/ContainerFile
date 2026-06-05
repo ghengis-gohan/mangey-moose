@@ -1,0 +1,57 @@
+# mediamtx/Containerfile
+#
+# Always-on RTSP/HLS/WHEP server. Receives video published by whichever
+# inference container is active and fans it out to the ground station.
+#
+# Design:
+# - Wraps the official MediaMTX static binary on a minimal UBI base.
+# - Binary is downloaded at build time and checksum-verified.
+# - Config is baked in (see mediamtx.yml); change = rebuild + redeploy.
+# - Runs as UID 1000 (non-root). MediaMTX does not need privileged ports.
+# - Must be deployed with --network=host so the inference containers can
+#   publish to 127.0.0.1:8554 without extra bridging.
+#
+# Alternative: skip this Containerfile and deploy the upstream image
+# docker.io/bluenviron/mediamtx:v1.17.1 with a bind-mounted mediamtx.yml.
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS fetcher
+
+ARG MEDIAMTX_VERSION=v1.17.1
+ARG TARGETARCH=arm64
+# Upstream release naming: linux_arm64v8 for aarch64
+ARG MTX_ASSET=mediamtx_${MEDIAMTX_VERSION}_linux_arm64v8.tar.gz
+
+RUN microdnf install -y tar gzip ca-certificates && microdnf clean all
+
+WORKDIR /tmp
+RUN curl -fsSL -o mediamtx.tar.gz \
+      https://github.com/bluenviron/mediamtx/releases/download/${MEDIAMTX_VERSION}/${MTX_ASSET} && \
+    tar -xzf mediamtx.tar.gz && \
+    install -m 0755 mediamtx /usr/local/bin/mediamtx && \
+    /usr/local/bin/mediamtx --version
+
+# ------------------------------------------------------------------------------
+# Final stage: tiny runtime image
+# ------------------------------------------------------------------------------
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest
+
+LABEL org.opencontainers.image.title="drone-edge-mediamtx" \
+      org.opencontainers.image.description="MediaMTX RTSP/HLS/WHEP server for drone-edge project" \
+      org.opencontainers.image.source="https://github.com/bluenviron/mediamtx"
+
+COPY --from=fetcher /usr/local/bin/mediamtx /usr/local/bin/mediamtx
+COPY mediamtx.yml /etc/mediamtx/mediamtx.yml
+
+# Non-root user. ubi-micro has no shell, so we create the user via passwd file.
+# UID/GID 1000.
+USER 1000:1000
+
+# Documented ports (informational only; --network=host ignores EXPOSE)
+#   8554  RTSP
+#   8888  HLS
+#   8889  WebRTC/WHEP
+#   9997  HTTP API (loopback only, see mediamtx.yml)
+EXPOSE 8554/tcp 8888/tcp 8889/tcp
+
+ENTRYPOINT ["/usr/local/bin/mediamtx"]
+CMD ["/etc/mediamtx/mediamtx.yml"]

@@ -1,0 +1,108 @@
+# fleet-yolo.yaml
+#
+# Applies to any device labeled `inference=yolo` AND `purpose=drone-edge`.
+# Deploys: mediamtx (always-on) + model-init (one-shot) + yolo-infer.
+#
+# Apply:  flightctl apply -f fleet-yolo.yaml
+# Verify: flightctl get fleet drone-edge-yolo -o yaml
+
+apiVersion: flightctl.io/v1alpha1
+kind: Fleet
+metadata:
+  name: drone-edge-yolo
+  labels:
+    purpose: drone-edge
+    inference: yolo
+spec:
+  selector:
+    matchLabels:
+      purpose: drone-edge
+      inference: yolo
+
+  template:
+    metadata:
+      labels:
+        purpose: drone-edge
+        inference: yolo
+    spec:
+      os:
+        image: quay.io/YOUR_ORG/jetson-bootc:latest
+
+      # Applications: ordered conceptually but flightctl doesn't guarantee
+      # start order — each app's own restart policy covers dependencies.
+      applications:
+        # --- MediaMTX: always-on RTSP/HLS/WHEP server --------------------
+        - name: mediamtx
+          inline:
+            - path: compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  mediamtx:
+                    image: quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1
+                    container_name: drone-edge-mediamtx
+                    network_mode: host
+                    restart: unless-stopped
+
+        # --- Model init: one-shot TRT engine export ----------------------
+        - name: model-init
+          inline:
+            - path: compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  model-init:
+                    image: quay.io/YOUR_ORG/drone-edge-model-init:v1
+                    container_name: drone-edge-model-init
+                    restart: "no"
+                    devices:
+                      - nvidia.com/gpu=all
+                    security_opt:
+                      - label=disable
+                    volumes:
+                      - /var/lib/drone-edge/models:/models:z
+
+        # --- YOLO inference: the swappable workload ---------------------
+        - name: yolo-inference
+          inline:
+            - path: compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  yolo-infer:
+                    image: quay.io/YOUR_ORG/drone-edge-yolo-infer:v1
+                    container_name: drone-edge-yolo-infer
+                    network_mode: host
+                    restart: unless-stopped
+                    devices:
+                      - /dev/video0
+                      - nvidia.com/gpu=all
+                    group_add:
+                      - video
+                    security_opt:
+                      - label=disable
+                    volumes:
+                      - /var/lib/drone-edge/models:/models:ro,z
+                    environment:
+                      RTSP_URL: "rtsp://127.0.0.1:8554/infer"
+                      SRC: "/dev/video0"
+                      MODEL: "/models/yolov8n.engine"
+                      W: "1280"
+                      H: "720"
+                      FPS: "10"
+                      CAP_FOURCC: "YUYV"
+                      BITRATE: "2500k"
+                      ENCODER: "auto"
+                      CAM_FAIL_THRESHOLD: "30"
+
+  # Rollout policy: since you have one device, this is a formality. For a
+  # real fleet, bump batch sizes and success thresholds.
+  rolloutPolicy:
+    deviceSelection:
+      strategy: BatchSequence
+      sequence:
+        - selector:
+            matchLabels:
+              inference: yolo
+          limit: 100%
+    successThreshold: 100%
