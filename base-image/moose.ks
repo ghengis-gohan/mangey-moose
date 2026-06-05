@@ -35,11 +35,11 @@ autoconnect=true
 
 [wifi]
 mode=infrastructure
-ssid="BIVOUAC MOBILE"
+ssid="###SSID_NAME###"
 
 [wifi-security]
 key-mgmt=wpa-psk
-psk="Justsendit1988##"
+psk="###SSID_PASSWD###"
 
 [ipv4]
 method=auto
