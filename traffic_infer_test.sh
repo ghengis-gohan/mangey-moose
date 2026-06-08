@@ -1,7 +1,7 @@
 # On the Jetson (or a dev box cross-compiling to arm64)
 cd traffic-infer
 sudo podman build --platform=linux/arm64 \
-  -t quay.io/YOUR_ORG/drone-edge-traffic-infer:v1 .
+  -t quay.io/rh-ee-soanders/mangey-moose-traffic-infer:v1 .
 
 # Run it alongside mediamtx (which should already be running host-network)
 sudo podman run --rm \
@@ -12,7 +12,7 @@ sudo podman run --rm \
   --security-opt label=disable \
   -v /var/lib/mangey-moose/models:/models:z \
   -e RTSP_URL=rtsp://127.0.0.1:8554/infer \
-  quay.io/YOUR_ORG/drone-edge-traffic-infer:v1
+  quay.io/rh-ee-soanders/mangey-moose-traffic-infer:v1
 
 # Expected log sequence on first run:
 #   [traffic-infer] seeding model cache at /models/traffic/Primary_Detector

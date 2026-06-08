@@ -1,16 +1,11 @@
-# Model-init — one-shot TensorRT engine export.
-# Exits after writing /models/yolov8n.engine and a signature sentinel.
-# Same content as the model-init block in fleet-yolo.yaml — keep in sync.
+# MediaMTX RTSP/HLS/WHEP server — always on.
+# Mirror of the mediamtx block in both fleet specs — keep byte-for-byte in sync.
 version: "3.8"
 
 services:
-  model-init:
-    image: quay.io/rh-ee-soanders/mangey-moose-model-init:v1
-    container_name: mangey-moose-model-init
-    restart: "no"
-    devices:
-      - nvidia.com/gpu=all
-    security_opt:
-      - label=disable
-    volumes:
-      - /var/lib/mangey-moose/models:/models:z
+  mediamtx:
+    image: quay.io/rh-ee-soanders/mangey-moose-mediamtx:v1.17.1
+    container_name: mangey-moose-mediamtx
+    network_mode: host
+    restart: unless-stopped
+    # No volumes, no devices, no GPU. Pure userspace RTSP server.

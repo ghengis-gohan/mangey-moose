@@ -1,4 +1,4 @@
-# From the drone-edge/ repo root
+# From the mangey-moose / repo root
 cd mediamtx
 
 # Build for the Jetson (aarch64). If you're building ON the Jetson, skip --platform.

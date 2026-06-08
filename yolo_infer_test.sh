@@ -1,6 +1,6 @@
 cd yolo-infer
 sudo podman build --platform=linux/arm64 \
-  -t quay.io/YOUR_ORG/drone-edge-yolo-infer:v1 .
+  -t quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1 .
 
 # Manual test: assumes mediamtx is already running host-network,
 # and /var/lib/mangey-moose/models has yolov8n.engine
@@ -11,7 +11,7 @@ sudo podman run --rm \
   --group-add video \
   -v /var/lib/mangey-moose/models:/models:ro,z \
   -e RTSP_URL=rtsp://127.0.0.1:8554/infer \
-  quay.io/YOUR_ORG/drone-edge-yolo-infer:v1
+  quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1
 
 # Expected log sequence:
 #   [yolo-infer] loading TensorRT engine: /models/yolov8n.engine

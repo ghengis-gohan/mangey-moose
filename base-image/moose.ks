@@ -52,7 +52,7 @@ chmod 600 /etc/NetworkManager/system-connections/drone-wifi.nmconnection
 # --- SSH authorized_keys for the redhat user ----------------------------------
 mkdir -p /var/home/redhat/.ssh
 cat >/var/home/redhat/.ssh/authorized_keys <<'EOF'
-ssh-ed25519 AAAA...your_public_key_here... you@laptop
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOk4uX5r2gvfPn7MmgT0A/3NWJKEZU6wkw5WewfR84sv ghengisgohan@mangey-moose
 EOF
 chmod 700 /var/home/redhat/.ssh
 chmod 600 /var/home/redhat/.ssh/authorized_keys
