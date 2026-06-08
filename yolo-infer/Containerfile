@@ -1,17 +1,3 @@
-# yolo-infer/Containerfile
-#
-# Swappable inference workload #1.
-# Reads /dev/video0, runs YOLOv8 (TensorRT engine), publishes annotated
-# frames to MediaMTX at rtsp://127.0.0.1:8554/infer.
-#
-# Contract (shared with traffic-infer):
-#   INPUT:  /dev/video0 (V4L2)
-#   OUTPUT: rtsp://127.0.0.1:8554/infer (H.264 over RTSP/TCP)
-#   MODELS: /models (read-only, populated by model-init container)
-#
-# IMPORTANT: BASE_IMAGE must match the tag used by model-init/ exactly.
-# A mismatch causes TRT engine deserialization failures at startup.
-
 ARG BASE_IMAGE=nvcr.io/nvidia/l4t-ml:r36.2.0-py3
 FROM ${BASE_IMAGE}
 
@@ -19,23 +5,23 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# OS deps:
-# - ffmpeg:       frame encode + RTSP publish (NVENC path preferred at runtime)
-# - v4l-utils:    v4l2-ctl for camera debugging inside the container
-# - libglib2.0-0, libgl1: OpenCV runtime deps (usually present, harmless if so)
-# - tini:         PID 1 that reaps zombies and forwards signals cleanly to python
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ffmpeg \
-      v4l-utils \
-      ca-certificates \
-      libglib2.0-0 \
-      libgl1 \
-      tini \
+      ffmpeg v4l-utils ca-certificates libglib2.0-0 libgl1 tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Python deps.
-# --no-deps on ultralytics so we DON'T clobber the Jetson-tuned torch that
-# ships in l4t-ml with a generic CPU-only ARM64 wheel from PyPI.
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --no-cache-dir --no-deps ultralytics && \
-    python3 -m pip install
+    python3 -m pip install --no-cache-dir \
+      'numpy<2' pyyaml tqdm requests psutil pandas matplotlib seaborn py-cpuinfo
+
+WORKDIR /app
+COPY infer_stream_rtsp.py /app/infer_stream_rtsp.py
+RUN chmod +x /app/infer_stream_rtsp.py
+
+ENV RTSP_URL="rtsp://127.0.0.1:8554/infer" SRC="/dev/video0" \
+    MODEL="/models/yolov8n.engine" FALLBACK_MODEL="/models/yolov8n.pt" \
+    W="1280" H="720" FPS="10" CAP_FOURCC="YUYV" \
+    BITRATE="2500k" ENCODER="auto" CAM_FAIL_THRESHOLD="30"
+
+VOLUME ["/models"]
+ENTRYPOINT ["/usr/bin/tini", "--", "python3", "/app/infer_stream_rtsp.py"]
