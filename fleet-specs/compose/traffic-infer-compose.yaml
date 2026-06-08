@@ -4,8 +4,8 @@ version: "3.8"
 
 services:
   traffic-infer:
-    image: quay.io/YOUR_ORG/drone-edge-traffic-infer:v1
-    container_name: drone-edge-traffic-infer
+    image: quay.io/rh-ee-soanders/mangey-moose-traffic-infer:v1
+    container_name: mangey-moose-traffic-infer
     network_mode: host
     restart: unless-stopped
     devices:
@@ -17,7 +17,7 @@ services:
       - label=disable
     volumes:
       # RW because nvinfer needs to write the auto-built TRT engine on first run.
-      - /var/lib/drone-edge/models:/models:z
+      - /var/lib/mangey-moose/models:/models:z
     environment:
       RTSP_URL: "rtsp://127.0.0.1:8554/infer"
       SRC: "/dev/video0"

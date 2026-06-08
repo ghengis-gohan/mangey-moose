@@ -1,28 +1,28 @@
 # fleet-yolo.yaml
 #
-# Applies to any device labeled `inference=yolo` AND `purpose=drone-edge`.
+# Applies to any device labeled `inference=yolo` AND `purpose=mangey-moose`.
 # Deploys: mediamtx (always-on) + model-init (one-shot) + yolo-infer.
 #
 # Apply:  flightctl apply -f fleet-yolo.yaml
-# Verify: flightctl get fleet drone-edge-yolo -o yaml
+# Verify: flightctl get fleet mangey-moose-yolo -o yaml
 
 apiVersion: flightctl.io/v1alpha1
 kind: Fleet
 metadata:
-  name: drone-edge-yolo
+  name: mangey-moose-yolo
   labels:
-    purpose: drone-edge
+    purpose: mangey-moose
     inference: yolo
 spec:
   selector:
     matchLabels:
-      purpose: drone-edge
+      purpose: mangey-moose
       inference: yolo
 
   template:
     metadata:
       labels:
-        purpose: drone-edge
+        purpose: mangey-moose
         inference: yolo
     spec:
       os:
@@ -60,7 +60,7 @@ spec:
                     security_opt:
                       - label=disable
                     volumes:
-                      - /var/lib/drone-edge/models:/models:z
+                      - /var/lib/mangey-moose/models:/models:z
 
         # --- YOLO inference: the swappable workload ---------------------
         - name: yolo-inference
@@ -82,7 +82,7 @@ spec:
                     security_opt:
                       - label=disable
                     volumes:
-                      - /var/lib/drone-edge/models:/models:ro,z
+                      - /var/lib/mangey-moose/models:/models:ro,z
                     environment:
                       RTSP_URL: "rtsp://127.0.0.1:8554/infer"
                       SRC: "/dev/video0"

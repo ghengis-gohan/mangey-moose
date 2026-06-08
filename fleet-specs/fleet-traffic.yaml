@@ -1,26 +1,26 @@
 # fleet-traffic.yaml
 #
-# Applies to any device labeled `inference=traffic` AND `purpose=drone-edge`.
+# Applies to any device labeled `inference=traffic` AND `purpose=mangey-moose`.
 # Deploys: mediamtx (always-on, IDENTICAL to yolo fleet) + traffic-infer.
 # NO model-init — traffic-infer self-seeds its own model cache.
 
 apiVersion: flightctl.io/v1alpha1
 kind: Fleet
 metadata:
-  name: drone-edge-traffic
+  name: mangey-moose-traffic
   labels:
-    purpose: drone-edge
+    purpose: mangey-moose
     inference: traffic
 spec:
   selector:
     matchLabels:
-      purpose: drone-edge
+      purpose: mangey-moose
       inference: traffic
 
   template:
     metadata:
       labels:
-        purpose: drone-edge
+        purpose: mangey-moose
         inference: traffic
     spec:
       os:
@@ -61,7 +61,7 @@ spec:
                     security_opt:
                       - label=disable
                     volumes:
-                      - /var/lib/drone-edge/models:/models:z
+                      - /var/lib/mangey-moose/models:/models:z
                     environment:
                       RTSP_URL: "rtsp://127.0.0.1:8554/infer"
                       SRC: "/dev/video0"

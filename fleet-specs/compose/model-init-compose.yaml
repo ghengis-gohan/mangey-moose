@@ -5,9 +5,9 @@
 version: "3.8"
 
 services:
-  mediamtx:
-    image: quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1
-    container_name: drone-edge-mediamtx
+  model-init:
+    image: quay.io/rh-ee-soanders/mangey-moose-model-init:v1.17.1
+    container_name: mangey-moose-model-init
     network_mode: host
     restart: unless-stopped
     # No volumes, no devices, no GPU. Pure userspace RTSP server.

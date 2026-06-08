@@ -12,7 +12,7 @@
 # Must use the SAME base image tag as yolo-infer/ so the TRT runtime versions
 # match between the builder and the consumer.
 
-ARG BASE_IMAGE=nvcr.io/nvidia/l4t-ml:r36.2.0-py3
+ARG BASE_IMAGE=nvcr.io/nvidia/l4t-jetpack:r36.4.0
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive \
