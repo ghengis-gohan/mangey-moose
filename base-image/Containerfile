@@ -25,6 +25,7 @@ ARG USER_PASSWD
 RUN subscription-manager register --username "${RH_REG_USERNAME}" --password "${RH_REG_PASSWD}" --auto-attach && \
     subscription-manager repos --enable codeready-builder-for-rhel-9-aarch64-rpms && \
     dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+    dnf config-manager --add-repo https://rpm.flightctl.io/flightctl-epel.repo && \
     dnf install -y \
         weston \
         podman \
@@ -68,8 +69,8 @@ RUN systemctl enable flightctl-agent.service
 # --- Persistent host directories for application data -------------------------
 # Models built by the model-init container live here and are shared (read-only)
 # with the inference containers. Survives image updates because /var is persisted.
-RUN mkdir -p /var/lib/drone-edge/models && \
-    chmod 755 /var/lib/drone-edge /var/lib/drone-edge/models
+RUN mkdir -p /var/lib/mangey-moose/models && \
+    chmod 755 /var/lib/mangey-moose /var/lib/mangey-moose/models
 
 # --- Default user -------------------------------------------------------------
 RUN useradd -m -d /var/home/redhat -G wheel,video redhat && \

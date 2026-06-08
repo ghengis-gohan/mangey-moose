@@ -6,7 +6,7 @@ Jetson Orin Nano (RHEL9.4 bootc host)
 │   └── podman (rootful, via quadlets or flightctl-managed)
 │
 ├── Persistent host storage
-│   └── /var/lib/drone-edge/
+│   └── /var/lib/mangey-moose/
 │       └── models/                     ── shared volume for .pt and .engine
 │           ├── yolov8n.pt              ── shipped or downloaded once
 │           └── yolov8n.engine          ── built on-device by model-init
@@ -17,12 +17,12 @@ Jetson Orin Nano (RHEL9.4 bootc host)
 │   └── Role: receives publisher stream, fans out to viewers
 │
 ├── Container: model-init                [RUN ONCE, then exits]
-│   ├── Mounts: /var/lib/drone-edge/models → /models
+│   ├── Mounts: /var/lib/mangey-moose/models → /models
 │   ├── Devices: nvidia.com/gpu=all
 │   └── Role: exports .pt → .engine for this exact GPU/TRT version
 │
 └── Container: yolo-infer  OR  traffic-infer    [SWAPPABLE, only one at a time]
     ├── Network: host
     ├── Devices: /dev/video0, nvidia.com/gpu=all
-    ├── Mounts: /var/lib/drone-edge/models → /models (read-only)
+    ├── Mounts: /var/lib/mangey-moose/models → /models (read-only)
     └── Role: reads camera, runs inference, publishes to rtsp://127.0.0.1:8554/infer

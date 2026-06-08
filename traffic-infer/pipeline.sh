@@ -27,7 +27,7 @@ die() { printf '[traffic-infer][FATAL] %s\n' "$*" >&2; exit 1; }
 
 # -------------------------- preflight ---------------------------------------
 [[ -e "$SRC" ]] || die "camera not found at $SRC (did you pass --device $SRC?)"
-[[ -d /models ]] || die "/models not mounted (bind-mount /var/lib/drone-edge/models here)"
+[[ -d /models ]] || die "/models not mounted (bind-mount /var/lib/mangey-moose/models here)"
 command -v gst-launch-1.0 >/dev/null || die "gst-launch-1.0 missing"
 
 # Sanity: does the DeepStream sample we rely on exist?

@@ -10,7 +10,7 @@ sudo podman run --rm \
   --device nvidia.com/gpu=all \
   --group-add video \
   --security-opt label=disable \
-  -v /var/lib/drone-edge/models:/models:z \
+  -v /var/lib/mangey-moose/models:/models:z \
   -e RTSP_URL=rtsp://127.0.0.1:8554/infer \
   quay.io/YOUR_ORG/drone-edge-traffic-infer:v1
 

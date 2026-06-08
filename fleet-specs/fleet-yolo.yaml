@@ -26,7 +26,7 @@ spec:
         inference: yolo
     spec:
       os:
-        image: quay.io/YOUR_ORG/jetson-bootc:latest
+        image: quay.io/rh-ee-soanders/mangey-moose:latest
 
       # Applications: ordered conceptually but flightctl doesn't guarantee
       # start order — each app's own restart policy covers dependencies.
@@ -39,8 +39,8 @@ spec:
                 version: "3.8"
                 services:
                   mediamtx:
-                    image: quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1
-                    container_name: drone-edge-mediamtx
+                    image: quay.io/rh-ee-soanders/mangey-moose-mediamtx:v1.17.1
+                    container_name: mangey-moose-mediamtx
                     network_mode: host
                     restart: unless-stopped
 
@@ -52,8 +52,8 @@ spec:
                 version: "3.8"
                 services:
                   model-init:
-                    image: quay.io/YOUR_ORG/drone-edge-model-init:v1
-                    container_name: drone-edge-model-init
+                    image: quay.io/rh-ee-soanders/mangey-moose-model-init:v1
+                    container_name: mangey-moose-model-init
                     restart: "no"
                     devices:
                       - nvidia.com/gpu=all
@@ -70,8 +70,8 @@ spec:
                 version: "3.8"
                 services:
                   yolo-infer:
-                    image: quay.io/YOUR_ORG/drone-edge-yolo-infer:v1
-                    container_name: drone-edge-yolo-infer
+                    image: quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1
+                    container_name: mangey-moose-yolo-infer
                     network_mode: host
                     restart: unless-stopped
                     devices:

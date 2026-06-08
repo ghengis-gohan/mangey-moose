@@ -4,8 +4,8 @@ version: "3.8"
 
 services:
   yolo-infer:
-    image: quay.io/YOUR_ORG/drone-edge-yolo-infer:v1
-    container_name: drone-edge-yolo-infer
+    image: quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1
+    container_name: mangey-moose-yolo-infer
     network_mode: host
     restart: unless-stopped
     devices:
@@ -16,7 +16,7 @@ services:
     security_opt:
       - label=disable
     volumes:
-      - /var/lib/drone-edge/models:/models:ro,z
+      - /var/lib/mangey-moose/models:/models:ro,z
     environment:
       RTSP_URL: "rtsp://127.0.0.1:8554/infer"
       SRC: "/dev/video0"

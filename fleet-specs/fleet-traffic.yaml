@@ -24,7 +24,7 @@ spec:
         inference: traffic
     spec:
       os:
-        image: quay.io/YOUR_ORG/jetson-bootc:latest
+        image: quay.io/rh-ee-soanders/mangey-moose:latest
 
       applications:
         # --- MediaMTX: IDENTICAL compose content to fleet-yolo.yaml ------
@@ -36,8 +36,8 @@ spec:
                 version: "3.8"
                 services:
                   mediamtx:
-                    image: quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1
-                    container_name: drone-edge-mediamtx
+                    image: quay.io/rh-ee-soanders/mangey-moose-mediamtx:v1.17.1
+                    container_name: mangey-moose-mediamtx
                     network_mode: host
                     restart: unless-stopped
 
@@ -49,8 +49,8 @@ spec:
                 version: "3.8"
                 services:
                   traffic-infer:
-                    image: quay.io/YOUR_ORG/drone-edge-traffic-infer:v1
-                    container_name: drone-edge-traffic-infer
+                    image: quay.io/rh-ee-soanders/mangey-moose-traffic-infer:v1
+                    container_name: mangey-moose-traffic-infer
                     network_mode: host
                     restart: unless-stopped
                     devices:
