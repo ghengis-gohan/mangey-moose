@@ -2,12 +2,12 @@
 cd mediamtx
 
 # Build for the Jetson (aarch64). If you're building ON the Jetson, skip --platform.
-podman build --platform=linux/arm64 -t quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1 .
+podman build --platform=linux/arm64 -t quay.io/rh-ee-soanders/mangey-moose-mediamtx:v1.17.1 .
 
 # Smoke test on the Jetson before wiring to Edge Manager
 sudo podman run --rm --network=host \
   --name mediamtx-test \
-  quay.io/YOUR_ORG/drone-edge-mediamtx:v1.17.1
+  quay.io/rh-ee-soanders/mangey-moose-mediamtx:v1.17.1
 
 # In another terminal, verify:
 curl -s http://127.0.0.1:9997/v3/paths/list | jq

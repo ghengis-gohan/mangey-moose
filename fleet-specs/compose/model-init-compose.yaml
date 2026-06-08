@@ -1,13 +1,15 @@
-# MediaMTX RTSP/HLS/WHEP server — always on.
-# This container is duplicated in both yolo and traffic fleets. Content must
-# match byte-for-byte so the flightctl agent treats it as unchanged during
-# fleet transitions and doesn't cycle it unnecessarily.
+# Model-init — one-shot TensorRT engine export. Exits after writing the engine.
+# Mirror of the model-init block in fleet-yolo.yaml — keep in sync.
 version: "3.8"
 
 services:
   model-init:
-    image: quay.io/rh-ee-soanders/mangey-moose-model-init:v1.17.1
+    image: quay.io/rh-ee-soanders/mangey-moose-model-init:v1
     container_name: mangey-moose-model-init
-    network_mode: host
-    restart: unless-stopped
-    # No volumes, no devices, no GPU. Pure userspace RTSP server.
+    restart: "no"
+    devices:
+      - nvidia.com/gpu=all
+    security_opt:
+      - label=disable
+    volumes:
+      - /var/lib/mangey-moose/models:/models:z
