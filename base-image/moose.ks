@@ -1,66 +1,90 @@
-# base-image/kickstart.ks
-#
-# Used with bootc-image-builder (or Anaconda) to produce the installer ISO.
-# Handles: disk layout, first-boot WiFi, SSH key, hostname.
-
-text
 lang en_US.UTF-8
 keyboard us
-timezone America/Denver --utc
+timezone UTC
+text
 
-# Disk layout - wipe and auto-partition the eMMC/NVMe
+# --- Pre-install sanity check -------------------------------------------------
+# Fail loud if the NVMe isn't enumerated. Better than silently installing onto
+# the wrong disk (e.g. the USB stick itself, which is what happened last time).
+%pre --erroronfail
+if [ ! -b /dev/nvme0n1 ]; then
+    echo "FATAL: /dev/nvme0n1 not detected. Aborting install." >&2
+    exit 1
+fi
+%end
+
+# --- Disk layout --------------------------------------------------------------
+# Pin install to the NVMe ONLY. Anaconda will not touch the USB stick, SD card,
+# or anything else that enumerates. The JetPack BSP partitions (A_kernel,
+# B_kernel, recovery, esp_alt, UDA, etc.) get wiped along with everything else
+# on the NVMe — that's intentional. UEFI firmware lives in the Jetson's QSPI,
+# not on the NVMe, so this is safe.
+ignoredisk --only-use=nvme0n1
 zerombr
-clearpart --all --initlabel
-autopart --type=plain --noswap
+clearpart --all --initlabel --drives=nvme0n1
 
-# Pull the bootc image from your registry.
-# Replace with your actual registry path once you push the built image.
-ostreecontainer --url quay.io/rh-ee-soanders/marvelous-moose:latest
+# Platform-required partitions (ESP + boot on aarch64), then LVM for everything
+# else. ESP lands at p1 where UEFI looks first.
+reqpart --add-boot
+part pv.01 --grow --ondisk=nvme0n1
+volgroup rhel pv.01
+logvol / --vgname=rhel --fstype=xfs --size=51200 --name=root
 
-# No default user here; the redhat user is created in the Containerfile.
-# If you want an install-time user instead, add:
-#   user --name=redhat --groups=wheel,video --password=... --iscrypted
+# --- Accounts -----------------------------------------------------------------
+rootpw redhat
+user --name=ghengisgohan --groups=wheel,video --password=redhat
+user --name=redhat --groups=wheel,video --password=redhat
 
-# Network + SSH come from %post below.
-reboot
+# --- Networking ---------------------------------------------------------------
+# Wired interface gets DHCP and activates on boot. WiFi is configured in
+# %post below.
+network --bootproto=dhcp --device=link --activate --onboot=on
 
-%post --erroronfail
-# --- WiFi connection ----------------------------------------------------------
-# Replace SSID and PSK. For WPA-Enterprise or hidden networks, adjust accordingly.
-cat >/etc/NetworkManager/system-connections/drone-wifi.nmconnection <<'EOF'
-[connection]
-id=drone-wifi
-type=wifi
-autoconnect=true
+# --- Boot from the embedded bootc container ----------------------------------
+# bootc-image-builder embeds the OCI image in the ISO at /run/install/repo/container
+ostreecontainer --transport oci --url /run/install/repo/container
 
-[wifi]
-mode=infrastructure
-ssid="###SSID_NAME###"
+# Eject the install media before rebooting so the firmware doesn't try to boot
+# it again on the next cycle.
+reboot --eject
 
-[wifi-security]
-key-mgmt=wpa-psk
-psk="###SSID_PASSWD###"
+# --- Post-install -------------------------------------------------------------
+%post --log=/dev/console --erroronfail
+set -euxo pipefail
 
-[ipv4]
-method=auto
+# Make sure the video group exists in /etc/group (it's in /usr/lib/group on
+# image-mode systems and needs to be replicated for rootless GPU access).
+grep -E '^video' /usr/lib/group >> /etc/group
 
-[ipv6]
-method=auto
-EOF
-chmod 600 /etc/NetworkManager/system-connections/drone-wifi.nmconnection
+# Regenerate kernel module dependency tables for the installed kernel.
+depmod -a
 
-# --- SSH authorized_keys for the redhat user ----------------------------------
+# Re-point the bootc image reference at the registry so future `bootc upgrade`
+# pulls from the right place. Replace ${IMAGE_NAME} with your real image
+# reference at build time, or hard-code it here.
+bootc switch --mutate-in-place --transport registry \
+    quay.io/rh-ee-soanders/mangey-moose-base-image:latest
+
+# --- WiFi setup ---------------------------------------------------------------
+# Create the NetworkManager connection for 'BIVOUAC MOBILE'. PSK is a
+# kickstart-time substitution; the rendered file in /tmp/moose.rendered.ks
+# has the real value before mkksiso embedded it.
+nmcli connection add type wifi con-name "BIVOUAC MOBILE" ifname wlan0 ssid "BIVOUAC MOBILE"
+nmcli connection modify Bivouac-Den \
+    wifi-sec.key-mgmt wpa-psk \
+    wifi-sec.psk Justsendit1988## \
+    connection.autoconnect yes
+
+# --- SSH access for the redhat user -------------------------------------------
 mkdir -p /var/home/redhat/.ssh
 cat >/var/home/redhat/.ssh/authorized_keys <<'EOF'
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOk4uX5r2gvfPn7MmgT0A/3NWJKEZU6wkw5WewfR84sv ghengisgohan@mangey-moose
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... your real key here ... user@host
 EOF
 chmod 700 /var/home/redhat/.ssh
 chmod 600 /var/home/redhat/.ssh/authorized_keys
 chown -R redhat:redhat /var/home/redhat/.ssh
 
 # --- Hostname -----------------------------------------------------------------
-# Each Jetson should have a unique hostname; override per-device if building
-# multiple ISOs, or set via flightctl-agent device enrollment.
-echo "jetson-drone-01" > /etc/hostname
+hostnamectl set-hostname jetson-drone-01
 
 %end

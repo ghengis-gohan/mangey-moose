@@ -39,8 +39,7 @@ RUN subscription-manager register --username "${RH_REG_USERNAME}" --password "${
         tmux \
         jq \
         flightctl-agent && \
-    dnf clean all && \
-    subscription-manager unregister || true
+    dnf clean all
 
 # --- NVIDIA Jetson stack ------------------------------------------------------
 # nvidia-jetpack-kmod:          kernel modules for Orin iGPU
@@ -72,10 +71,6 @@ RUN systemctl enable flightctl-agent.service
 RUN mkdir -p /var/lib/mangey-moose/models && \
     chmod 755 /var/lib/mangey-moose /var/lib/mangey-moose/models
 
-# --- Default user -------------------------------------------------------------
-RUN useradd -m -d /var/home/redhat -G wheel,video redhat && \
-    echo "redhat:${USER_PASSWD}" | chpasswd || true
-
 # Enable passwordless sudo for wheel (convenient for on-device debugging).
 # Remove this line if you want sudo to require a password.
 RUN sed -i 's/^# *\(%wheel.*NOPASSWD.*\)/\1/' /etc/sudoers
@@ -100,5 +95,6 @@ RUN systemctl enable NetworkManager.service && \
     systemctl enable firewalld.service && \
     systemctl enable podman.socket
 
-# bootc linter: verify the image
+RUN subscription-manager unregister || TRUE
+    # bootc linter: verify the image
 RUN bootc container lint
