@@ -19,7 +19,7 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS fetcher
 ARG MEDIAMTX_VERSION=v1.17.1
 ARG TARGETARCH=arm64
 # Upstream release naming: linux_arm64v8 for aarch64
-ARG MTX_ASSET=mediamtx_${MEDIAMTX_VERSION}_linux_arm64v8.tar.gz
+ARG MTX_ASSET=mediamtx_${MEDIAMTX_VERSION}_linux_arm64.tar.gz
 
 RUN microdnf install -y tar gzip ca-certificates && microdnf clean all
 

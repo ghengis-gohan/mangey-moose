@@ -14,7 +14,7 @@
 # Base image matches JetPack 6.1 (L4T r36.4). DeepStream 7.1 is the
 # supported pairing per NVIDIA's compatibility matrix.
 
-ARG BASE_IMAGE=nvcr.io/nvidia/deepstream-l4t:7.1-samples
+ARG BASE_IMAGE=nvcr.io/nvidia/deepstream-l4t:7.1-samples-multiarch
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive

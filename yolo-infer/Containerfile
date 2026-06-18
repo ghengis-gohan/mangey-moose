@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=nvcr.io/nvidia/l4t-ml:r36.2.0-py3
+ARG BASE_IMAGE=nvcr.io/nvidia/l4t-jetpack:r36.4.0
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -6,10 +6,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ffmpeg v4l-utils ca-certificates libglib2.0-0 libgl1 tini \
+      ffmpeg v4l-utils ca-certificates libglib2.0-0 libgl1 tini python3-opencv \
     && rm -rf /var/lib/apt/lists/*
 
+# Jetson PyTorch for JP6.1 / cu126 (must match model-init for engine compat).
 RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install --no-cache-dir \
+      --index-url https://pypi.jetson-ai-lab.io/jp6/cu126 \
+      torch==2.5.0 torchvision==0.20.0 && \
     python3 -m pip install --no-cache-dir --no-deps ultralytics && \
     python3 -m pip install --no-cache-dir \
       'numpy<2' pyyaml tqdm requests psutil pandas matplotlib seaborn py-cpuinfo

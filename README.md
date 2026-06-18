@@ -356,11 +356,3 @@ This is a **detection and patrol** platform. It observes and reports; it does no
 ## 🙏 Credits
 
 Built on the shoulders of [ArduPilot](https://ardupilot.org/), [MediaMTX](https://github.com/bluenviron/mediamtx), [Ultralytics YOLO](https://github.com/ultralytics/ultralytics), [NVIDIA DeepStream](https://developer.nvidia.com/deepstream-sdk), [RHEL image mode](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9), and [flightctl](https://github.com/flightctl/flightctl). Edge-AI pattern descends from **Project F.A.L.C.O.N.**
-
-## License
-
-© Inari Watch. All rights reserved. *(Proprietary — update this line if you intend to open-source.)*
-
-<div align="center">
-<sub>🦊 <i>The fox watches the hills.</i></sub>
-</div>

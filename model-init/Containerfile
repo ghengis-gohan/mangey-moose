@@ -26,18 +26,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Ultralytics brings the YOLO export machinery. --no-deps to avoid clobbering
 # the Jetson-tuned torch/torchvision that ship in l4t-ml.
+# Jetson PyTorch for JP6.1 / cu126 — CUDA-enabled wheel (NOT plain-PyPI torch,
+# which is CPU-only and fails with missing cuDNN). Must match across model-init
+# and yolo-infer so the exported TensorRT engine deserializes.
 RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install --no-cache-dir \
+      --index-url https://pypi.jetson-ai-lab.io/jp6/cu126 \
+      torch==2.5.0 torchvision==0.20.0 && \
     python3 -m pip install --no-cache-dir --no-deps ultralytics && \
     python3 -m pip install --no-cache-dir \
-      'numpy<2' \
-      pyyaml \
-      tqdm \
-      requests \
-      psutil \
-      pandas \
-      matplotlib \
-      seaborn \
-      py-cpuinfo
+      'numpy<2' pyyaml tqdm requests psutil pandas matplotlib seaborn py-cpuinfo
 
 WORKDIR /app
 
