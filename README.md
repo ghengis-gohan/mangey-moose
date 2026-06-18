@@ -2,7 +2,7 @@
 
 # the mangey-moose
 
-### Edge-AI flight stack for flexible day 2
+### Edge-AI flight stack for flexible day 2 operations
 
 *Immutable RHEL at the edge of the wilderness. Swappable inference. Zero-touch fleet ops.*
 
@@ -28,7 +28,7 @@ The whole node is built as an **immutable, image-based Linux system** ([RHEL boo
 
 ## Mission context
 
-Part of **[Inari Watch](https://github.com/ghengis-gohan)** — a veteran-founded effort building a system-of-systems for regional wildfire defense, named for *Inari*, the Shinto fox deity associated with recovery from disaster. The guiding principle is **detection before suppression**: the Moose is a patrol-and-detect platform that flies large areas, finds ignition sources early, and cues human-authorized response. It does not act autonomously on the world. Bounded autonomy, human in the loop, always.
+Part of **[Red Hat](https://github.com/ghengis-gohan)** — a veteran-founded effort building a system-of-systems for regional wildfire defense, named for *Inari*, the Shinto fox deity associated with recovery from disaster. The guiding principle is **detection before suppression**: the Moose is a patrol-and-detect platform that flies large areas, finds ignition sources early, and cues human-authorized response. It does not act autonomously on the world. Bounded autonomy, human in the loop, always.
 
 ---
 
