@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🦊 mangey-moose
+# the mangey-moose
 
-### Edge-AI flight stack for the Inari Watch wildfire-detection UAV
+### Edge-AI flight stack for flexible day 2
 
 *Immutable RHEL at the edge of the wilderness. Swappable inference. Zero-touch fleet ops.*
 
