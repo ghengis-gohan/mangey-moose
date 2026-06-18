@@ -74,10 +74,10 @@ type=wifi
 autoconnect=true
 [wifi]
 mode=infrastructure
-ssid=Bivouac-Den
+ssid=###SSID###
 [wifi-security]
 key-mgmt=wpa-psk
-psk=Justsendit1988##
+psk=###WIFI_PASSWD###
 [ipv4]
 method=auto
 [ipv6]
