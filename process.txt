@@ -1,0 +1,33 @@
+
+sudo podman build --authfile "${PULL_SECRET}" -t "${IMAGE_NAME}" --secret "id=pullsecret,src=${PULL_SECRET}" --build-arg USER_NAME="${USER_NAME}" --build-arg RH_REG_USERNAME="${RH_REG_USERNAME}" --build-arg RH_REG_PASSWD="${RH_REG_PASSWD}" --build-arg USER_PASSWORD="${USER_PASSWORD}" -f ./base-image/Containerfile
+
+
+sudo podman run --name mm-entitle \ -e RH_USER='<your-rh-username>' \ 
+-e RH_PASS='<your-rh-password>' \ 
+registry.redhat.io/rhel9/rhel-bootc:9.4 bash -c ' set -e subscription-manager register --force --name "mangey-moose-builder-$(date +%s)" \ 
+--username "$RH_USER" --password "$RH_PASS" --auto-attach subscription-manager repos \ 
+--enable rhel-9-for-aarch64-baseos-rpms \ 
+--enable rhel-9-for-aarch64-appstream-rpms echo "registered + repos enabled"' 
+
+sudo podman cp mm-entitle:/etc/pki/entitlement entitlements/entitlement 
+sudo podman cp mm-entitle:/etc/pki/consumer entitlements/consumer 
+sudo podman cp mm-entitle:/etc/rhsm entitlements/rhsm 
+sudo podman cp mm-entitle:/etc/yum.repos.d/redhat.repo entitlements/redhat.repo 
+sudo podman rm mm-entitle
+
+
+sudo podman push ${IMAGE_NAME}
+
+sudo podman run --rm -it --privileged   --security-opt label=type:unconfined_t   -v /var/lib/containers/storage:/var/lib/containers/storage   -v "$(pwd)/output:/output"   -v "$(pwd)/entitlements/entitlement:/etc/pki/entitlement:ro"   -v "$(pwd)/entitlements/consumer:/etc/pki/consumer:ro"   -v "$(pwd)/entitlements/rhsm:/etc/rhsm:ro"   -v "$(pwd)/entitlements/redhat.repo:/etc/yum.repos.d/redhat.repo:ro"   registry.redhat.io/rhel9/bootc-image-builder:9.4   --local --type iso "${IMAGE_NAME}"
+Ls ou
+sudo podman run --rm -it --privileged   -v "$(pwd)/output/bootiso:/work:z"   -v "$(pwd)/base-image/moose.ks:/work/moose.ks:ro"   registry.fedoraproject.org/fedora:40 bash -c '
+    set -e
+    dnf install -y lorax > /dev/null
+    cd /work
+    rm -f mangey-moose-install.iso
+    mkksiso moose.ks install.iso mangey-moose-install.iso
+    ls -lh mangey-moose-install.iso'
+
+
+sudo dd if=output/bootiso/mangey-moose-install.iso of=/dev/sda bs=4M status=progress oflag=direct conv=fsync
+

@@ -32,8 +32,6 @@ logvol / --vgname=rhel --fstype=xfs --size=51200 --name=root
 
 # --- Accounts -----------------------------------------------------------------
 rootpw redhat
-user --name=ghengisgohan --groups=wheel,video --password=redhat
-user --name=redhat --groups=wheel,video --password=redhat
 
 # --- Networking ---------------------------------------------------------------
 # Wired interface gets DHCP and activates on boot. WiFi is configured in
@@ -66,19 +64,39 @@ bootc switch --mutate-in-place --transport registry \
     quay.io/rh-ee-soanders/mangey-moose-base-image:latest
 
 # --- WiFi setup ---------------------------------------------------------------
-# Create the NetworkManager connection for 'BIVOUAC MOBILE'. PSK is a
+# Create the NetworkManager connection for 'Bivouac-Den'. PSK is a
 # kickstart-time substitution; the rendered file in /tmp/moose.rendered.ks
 # has the real value before mkksiso embedded it.
-nmcli connection add type wifi con-name "BIVOUAC MOBILE" ifname wlan0 ssid "BIVOUAC MOBILE"
-nmcli connection modify Bivouac-Den \
-    wifi-sec.key-mgmt wpa-psk \
-    wifi-sec.psk Justsendit1988## \
-    connection.autoconnect yes
+cat >/etc/NetworkManager/system-connections/Bivouac-Den.nmconnection <<'EOF'
+[connection]
+id=Bivouac-Den
+type=wifi
+autoconnect=true
+[wifi]
+mode=infrastructure
+ssid=Bivouac-Den
+[wifi-security]
+key-mgmt=wpa-psk
+psk=Justsendit1988##
+[ipv4]
+method=auto
+[ipv6]
+method=auto
+EOF
+chmod 600 /etc/NetworkManager/system-connections/Bivouac-Den.nmconnection
+chown root:root /etc/NetworkManager/system-connections/Bivouac-Den.nmconnection
 
 # --- SSH access for the redhat user -------------------------------------------
+useradd -m -d /var/home/redhat       -G wheel,video redhat       2>/dev/null || true
+useradd -m -d /var/home/ghengisgohan -G wheel,video ghengisgohan 2>/dev/null || true
+
+echo 'root:redhat'         | chpasswd
+echo 'redhat:redhat'       | chpasswd
+echo 'ghengisgohan:redhat' | chpasswd
+
 mkdir -p /var/home/redhat/.ssh
 cat >/var/home/redhat/.ssh/authorized_keys <<'EOF'
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... your real key here ... user@host
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFArFqiUcEC0Uk9y+BwjaAkL6OVb6/ka48oQlcdE7bEp ghengisgohan@mangey-moose
 EOF
 chmod 700 /var/home/redhat/.ssh
 chmod 600 /var/home/redhat/.ssh/authorized_keys
