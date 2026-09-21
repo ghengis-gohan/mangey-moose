@@ -7,9 +7,9 @@
 
 set -euo pipefail
 
-SRC_WEIGHTS="${SRC_WEIGHTS:-/app/yolov8n.pt}"
+SRC_WEIGHTS="${SRC_WEIGHTS:-/app/yolo26n.pt}"
 OUT_DIR="${OUT_DIR:-/models}"
-OUT_NAME="${OUT_NAME:-yolov8n.engine}"
+OUT_NAME="${OUT_NAME:-yolo26n.engine}"
 IMG_SIZE="${IMG_SIZE:-640}"
 HALF="${HALF:-true}"
 WORKSPACE_GB="${WORKSPACE_GB:-2}"
@@ -55,7 +55,7 @@ find "$OUT_DIR" -maxdepth 1 -type f -name '.engine_built_*' -delete || true
 log "exporting TensorRT engine (this can take several minutes on Orin Nano)..."
 
 # Ultralytics CLI export. Writes alongside the .pt by default, so we copy after.
-# format=engine -> .engine file. half=True -> FP16 (big speedup on Jetson, same accuracy for YOLOv8n).
+# format=engine -> .engine file. half=True -> FP16 (big speedup on Jetson, same accuracy for YOLO26n).
 cd /app
 python3 - <<PY
 from ultralytics import YOLO

@@ -2,7 +2,7 @@
 """
 infer_stream_rtsp.py
 
-Reads frames from a V4L2 camera, runs YOLOv8 inference (TensorRT engine),
+Reads frames from a V4L2 camera, runs YOLO26 inference (TensorRT engine),
 annotates, and publishes H.264-over-RTSP to a MediaMTX sidecar.
 
 Designed to run under tini in a container managed by Red Hat Edge Manager.
@@ -24,8 +24,8 @@ from ultralytics import YOLO
 # -------------------------- config from env ----------------------------------
 RTSP_URL       = os.environ.get("RTSP_URL", "rtsp://127.0.0.1:8554/infer")
 SRC            = os.environ.get("SRC", "/dev/video0")
-MODEL          = os.environ.get("MODEL", "/models/yolov8n.engine")
-FALLBACK_MODEL = os.environ.get("FALLBACK_MODEL", "/models/yolov8n.pt")
+MODEL          = os.environ.get("MODEL", "/models/yolo26n.engine")
+FALLBACK_MODEL = os.environ.get("FALLBACK_MODEL", "/models/yolo26n.pt")
 W              = int(os.environ.get("W", "1280"))
 H              = int(os.environ.get("H", "720"))
 FPS            = int(os.environ.get("FPS", "10"))

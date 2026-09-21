@@ -1,6 +1,6 @@
 # model-init/Containerfile
 #
-# One-shot container: exports Ultralytics YOLO .pt weights into a TensorRT
+# One-shot container: exports Ultralytics YOLO26 .pt weights into a TensorRT
 # .engine tuned for THIS device's GPU + TRT version, then exits.
 #
 # Why on-device: TensorRT engines are not portable. They must be built against
@@ -33,7 +33,7 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --no-cache-dir \
       --index-url https://pypi.jetson-ai-lab.io/jp6/cu126 \
       torch==2.5.0 torchvision==0.20.0 && \
-    python3 -m pip install --no-cache-dir --no-deps ultralytics && \
+    python3 -m pip install --no-cache-dir --no-deps ultralytics==8.4.157 && \
     python3 -m pip install --no-cache-dir \
       'numpy<2' pyyaml tqdm requests psutil pandas matplotlib seaborn py-cpuinfo
 
@@ -41,14 +41,14 @@ WORKDIR /app
 
 # Bundle the source weights directly in the image for deterministic,
 # offline-capable exports.
-COPY yolov8n.pt /app/yolov8n.pt
+COPY yolo26n.pt /app/yolo26n.pt
 COPY export_engine.sh /app/export_engine.sh
 RUN chmod +x /app/export_engine.sh
 
 # Runtime defaults. Override via Edge Manager app spec if needed.
-ENV SRC_WEIGHTS="/app/yolov8n.pt" \
+ENV SRC_WEIGHTS="/app/yolo26n.pt" \
     OUT_DIR="/models" \
-    OUT_NAME="yolov8n.engine" \
+    OUT_NAME="yolo26n.engine" \
     IMG_SIZE="640" \
     HALF="true" \
     WORKSPACE_GB="2"

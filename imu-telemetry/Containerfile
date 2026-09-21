@@ -1,0 +1,32 @@
+# imu-telemetry/Containerfile
+#
+# Workload #3: reads the Pololu AltIMU-10 v5 over I2C from the Jetson's
+# 40-pin header and serves a rolling-window dashboard on :8080.
+#
+# No GPU, no camera. Tiny image; starts in ~1s. Needs the host to expose
+# /dev/i2c-<bus> (i2c-dev module is loaded by the base image) and the
+# container to run with --device /dev/i2c-<bus> and --group-add keep-groups
+# or as root (default here).
+#
+# Contract:
+#   INPUT:  /dev/i2c-7  (header pins 3/5; use /dev/i2c-1 for pins 27/28)
+#   OUTPUT: http://<jetson>:8080/  dashboard, /data JSON, /latest JSON, /healthz
+
+FROM registry.access.redhat.com/ubi9/python-312-minimal:latest
+
+USER 0
+# smbus2 is pure Python; no i2c-tools needed at runtime.
+RUN pip install --no-cache-dir smbus2==0.5.1
+
+WORKDIR /app
+COPY imu_server.py /app/imu_server.py
+
+ENV I2C_BUS="7" \
+    PORT="8080" \
+    WINDOW="10" \
+    RATE_HZ="20" \
+    SIM="0" \
+    PYTHONUNBUFFERED=1
+
+EXPOSE 8080/tcp
+ENTRYPOINT ["python3", "/app/imu_server.py"]

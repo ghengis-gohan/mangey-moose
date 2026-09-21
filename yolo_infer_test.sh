@@ -1,20 +1,21 @@
 cd yolo-infer
 sudo podman build --platform=linux/arm64 \
-  -t quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1 .
+  -t quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v2 .
 
 # Manual test: assumes mediamtx is already running host-network,
-# and /var/lib/mangey-moose/models has yolov8n.engine
+# and /var/lib/mangey-moose/models has yolo26n.engine
 sudo podman run --rm \
   --network=host \
   --device /dev/video0 \
   --device nvidia.com/gpu=all \
   --group-add video \
+  --security-opt label=disable \
   -v /var/lib/mangey-moose/models:/models:ro,z \
   -e RTSP_URL=rtsp://127.0.0.1:8554/infer \
-  quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1
+  quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v2
 
 # Expected log sequence:
-#   [yolo-infer] loading TensorRT engine: /models/yolov8n.engine
+#   [yolo-infer] loading TensorRT engine: /models/yolo26n.engine
 #   [yolo-infer] camera FOURCC=YUYV FPS=10.0 size=1280x720
 #   [yolo-infer] selected encoder: h264_nvmpi     (or nvenc / x264)
 #   [yolo-infer] publishing to: rtsp://127.0.0.1:8554/infer

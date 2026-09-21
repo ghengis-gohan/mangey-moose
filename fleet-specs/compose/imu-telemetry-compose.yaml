@@ -1,0 +1,19 @@
+# AltIMU-10 v5 telemetry dashboard on :8080. No GPU, no camera.
+# Mirror of the imu-telemetry block in fleet-imu.yaml — keep in sync.
+version: "3.8"
+
+services:
+  imu-telemetry:
+    image: quay.io/rh-ee-soanders/mangey-moose-imu-telemetry:v1
+    container_name: mangey-moose-imu-telemetry
+    network_mode: host
+    restart: unless-stopped
+    devices:
+      - /dev/i2c-7
+    security_opt:
+      - label=disable
+    environment:
+      I2C_BUS: "7"
+      PORT: "8080"
+      WINDOW: "10"
+      RATE_HZ: "20"

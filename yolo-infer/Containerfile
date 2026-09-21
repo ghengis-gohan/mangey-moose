@@ -14,7 +14,7 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --no-cache-dir \
       --index-url https://pypi.jetson-ai-lab.io/jp6/cu126 \
       torch==2.5.0 torchvision==0.20.0 && \
-    python3 -m pip install --no-cache-dir --no-deps ultralytics && \
+    python3 -m pip install --no-cache-dir --no-deps ultralytics==8.4.157 && \
     python3 -m pip install --no-cache-dir \
       'numpy<2' pyyaml tqdm requests psutil pandas matplotlib seaborn py-cpuinfo
 
@@ -23,7 +23,7 @@ COPY infer_stream_rtsp.py /app/infer_stream_rtsp.py
 RUN chmod +x /app/infer_stream_rtsp.py
 
 ENV RTSP_URL="rtsp://127.0.0.1:8554/infer" SRC="/dev/video0" \
-    MODEL="/models/yolov8n.engine" FALLBACK_MODEL="/models/yolov8n.pt" \
+    MODEL="/models/yolo26n.engine" FALLBACK_MODEL="/models/yolo26n.pt" \
     W="1280" H="720" FPS="10" CAP_FOURCC="YUYV" \
     BITRATE="2500k" ENCODER="auto" CAM_FAIL_THRESHOLD="30"
 

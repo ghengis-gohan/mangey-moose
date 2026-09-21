@@ -1,10 +1,10 @@
-# YOLOv8 inference. Reads /dev/video0, publishes to rtsp://127.0.0.1:8554/infer.
+# YOLO26 inference. Reads /dev/video0, publishes to rtsp://127.0.0.1:8554/infer.
 # Requires mediamtx to be up; will restart on its own if it isn't yet.
 version: "3.8"
 
 services:
   yolo-infer:
-    image: quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1
+    image: quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v2
     container_name: mangey-moose-yolo-infer
     network_mode: host
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
     environment:
       RTSP_URL: "rtsp://127.0.0.1:8554/infer"
       SRC: "/dev/video0"
-      MODEL: "/models/yolov8n.engine"
+      MODEL: "/models/yolo26n.engine"
       W: "1280"
       H: "720"
       FPS: "10"

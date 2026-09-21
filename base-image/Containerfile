@@ -75,18 +75,26 @@ RUN mkdir -p /var/lib/mangey-moose/models && \
 # Remove this line if you want sudo to require a password.
 RUN sed -i 's/^# *\(%wheel.*NOPASSWD.*\)/\1/' /etc/sudoers
 
+# --- I2C for the AltIMU-10 v5 on the 40-pin header ----------------------------
+# The imu-telemetry container needs /dev/i2c-* device nodes. i2c-dev is a
+# module on the Jetson kernel; make sure it loads at boot. (Orin Nano devkit:
+# header pins 3/5 -> /dev/i2c-7, pins 27/28 -> /dev/i2c-1.)
+RUN echo "i2c-dev" > /etc/modules-load.d/i2c-dev.conf
+
 # --- Firewall -----------------------------------------------------------------
 # 22:   SSH
 # 5900: VNC (if you run weston + a VNC server for local GUI debug)
 # 8554: RTSP (MediaMTX publish/subscribe)
 # 8888: HLS (MediaMTX browser viewer)
 # 8889: WHEP (MediaMTX low-latency browser viewer)
+# 8080: imu-telemetry dashboard
 # Trusted sources 10.42.0.0/16 and 169.254.169.1 are flightctl-agent internal nets.
 RUN firewall-offline-cmd --zone=public --add-port=22/tcp && \
     firewall-offline-cmd --zone=public --add-port=5900/tcp && \
     firewall-offline-cmd --zone=public --add-port=8554/tcp && \
     firewall-offline-cmd --zone=public --add-port=8888/tcp && \
     firewall-offline-cmd --zone=public --add-port=8889/tcp && \
+    firewall-offline-cmd --zone=public --add-port=8080/tcp && \
     firewall-offline-cmd --zone=trusted --add-source=10.42.0.0/16 && \
     firewall-offline-cmd --zone=trusted --add-source=169.254.169.1
 
@@ -95,6 +103,7 @@ RUN systemctl enable NetworkManager.service && \
     systemctl enable firewalld.service && \
     systemctl enable podman.socket
 
-RUN subscription-manager unregister || TRUE
-    # bootc linter: verify the image
+RUN subscription-manager unregister || true
+
+# bootc linter: verify the image
 RUN bootc container lint

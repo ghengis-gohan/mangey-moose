@@ -25,8 +25,15 @@ spec:
         purpose: mangey-moose
         inference: yolo
     spec:
-      os:
-        image: quay.io/rh-ee-soanders/mangey-moose:latest
+      # OS image management is deliberately OFF for the demo.
+      # The kickstart's `bootc switch` and the README build step referenced two
+      # different image names (mangey-moose-base-image:latest vs mangey-moose:latest).
+      # If this field doesn't match `bootc status` on the device *exactly*, the
+      # agent will try to bootc-switch the OS on first reconcile and reboot the
+      # Jetson mid-demo. Re-enable only after confirming the booted image ref:
+      #   sudo bootc status --format json | jq -r '.status.booted.image.image.image'
+      # os:
+      #   image: quay.io/rh-ee-soanders/mangey-moose-base-image:latest
 
       # Applications: ordered conceptually but flightctl doesn't guarantee
       # start order — each app's own restart policy covers dependencies.
@@ -52,7 +59,7 @@ spec:
                 version: "3.8"
                 services:
                   model-init:
-                    image: quay.io/rh-ee-soanders/mangey-moose-model-init:v1
+                    image: quay.io/rh-ee-soanders/mangey-moose-model-init:v2
                     container_name: mangey-moose-model-init
                     restart: "no"
                     devices:
@@ -70,7 +77,7 @@ spec:
                 version: "3.8"
                 services:
                   yolo-infer:
-                    image: quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v1
+                    image: quay.io/rh-ee-soanders/mangey-moose-yolo-infer:v2
                     container_name: mangey-moose-yolo-infer
                     network_mode: host
                     restart: unless-stopped
@@ -86,7 +93,7 @@ spec:
                     environment:
                       RTSP_URL: "rtsp://127.0.0.1:8554/infer"
                       SRC: "/dev/video0"
-                      MODEL: "/models/yolov8n.engine"
+                      MODEL: "/models/yolo26n.engine"
                       W: "1280"
                       H: "720"
                       FPS: "10"

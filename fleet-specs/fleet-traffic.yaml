@@ -23,8 +23,15 @@ spec:
         purpose: mangey-moose
         inference: traffic
     spec:
-      os:
-        image: quay.io/rh-ee-soanders/mangey-moose:latest
+      # OS image management is deliberately OFF for the demo.
+      # The kickstart's `bootc switch` and the README build step referenced two
+      # different image names (mangey-moose-base-image:latest vs mangey-moose:latest).
+      # If this field doesn't match `bootc status` on the device *exactly*, the
+      # agent will try to bootc-switch the OS on first reconcile and reboot the
+      # Jetson mid-demo. Re-enable only after confirming the booted image ref:
+      #   sudo bootc status --format json | jq -r '.status.booted.image.image.image'
+      # os:
+      #   image: quay.io/rh-ee-soanders/mangey-moose-base-image:latest
 
       applications:
         # --- MediaMTX: IDENTICAL compose content to fleet-yolo.yaml ------

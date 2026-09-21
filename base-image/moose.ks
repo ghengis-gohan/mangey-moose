@@ -52,7 +52,8 @@ set -euxo pipefail
 
 # Make sure the video group exists in /etc/group (it's in /usr/lib/group on
 # image-mode systems and needs to be replicated for rootless GPU access).
-grep -E '^video' /usr/lib/group >> /etc/group
+# Guarded so a re-run / an image that already has it doesn't add a duplicate line.
+grep -qE '^video:' /etc/group || grep -E '^video:' /usr/lib/group >> /etc/group
 
 # Regenerate kernel module dependency tables for the installed kernel.
 depmod -a
@@ -103,6 +104,8 @@ chmod 600 /var/home/redhat/.ssh/authorized_keys
 chown -R redhat:redhat /var/home/redhat/.ssh
 
 # --- Hostname -----------------------------------------------------------------
-hostnamectl set-hostname jetson-drone-01
+# NOT hostnamectl: there is no dbus/systemd in the %post chroot, so it fails,
+# and with `set -e` + --erroronfail that aborts the whole install.
+echo "jetson-drone-01" > /etc/hostname
 
 %end

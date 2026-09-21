@@ -1,0 +1,81 @@
+# fleet-imu.yaml
+#
+# Applies to any device labeled `inference=imu` AND `purpose=mangey-moose`.
+# Deploys: mediamtx (always-on, IDENTICAL to the other two fleets) + imu-telemetry.
+#
+# The IMU workload doesn't touch /dev/video0, so it could just as well be an
+# always-on sidecar in fleet-yolo/fleet-traffic: to do that, paste the
+# imu-telemetry application block below into both of those files and delete
+# this fleet. Three-way label swap (yolo|traffic|imu) shows more of Edge
+# Manager; sidecar keeps the dashboard up while the video model swaps.
+#
+# Apply:  flightctl apply -f fleet-imu.yaml
+
+apiVersion: flightctl.io/v1alpha1
+kind: Fleet
+metadata:
+  name: mangey-moose-imu
+  labels:
+    purpose: mangey-moose
+    inference: imu
+spec:
+  selector:
+    matchLabels:
+      purpose: mangey-moose
+      inference: imu
+
+  template:
+    metadata:
+      labels:
+        purpose: mangey-moose
+        inference: imu
+    spec:
+      # OS image management deliberately OFF for the demo (see fleet-yolo.yaml).
+      # os:
+      #   image: quay.io/rh-ee-soanders/mangey-moose-base-image:latest
+
+      applications:
+        # --- MediaMTX: IDENTICAL compose content to the other fleets ------
+        - name: mediamtx
+          inline:
+            - path: compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  mediamtx:
+                    image: quay.io/rh-ee-soanders/mangey-moose-mediamtx:v1.17.1
+                    container_name: mangey-moose-mediamtx
+                    network_mode: host
+                    restart: unless-stopped
+
+        # --- IMU telemetry -------------------------------------------------
+        - name: imu-telemetry
+          inline:
+            - path: compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  imu-telemetry:
+                    image: quay.io/rh-ee-soanders/mangey-moose-imu-telemetry:v1
+                    container_name: mangey-moose-imu-telemetry
+                    network_mode: host
+                    restart: unless-stopped
+                    devices:
+                      - /dev/i2c-7
+                    security_opt:
+                      - label=disable
+                    environment:
+                      I2C_BUS: "7"
+                      PORT: "8080"
+                      WINDOW: "10"
+                      RATE_HZ: "20"
+
+  rolloutPolicy:
+    deviceSelection:
+      strategy: BatchSequence
+      sequence:
+        - selector:
+            matchLabels:
+              inference: imu
+          limit: 100%
+    successThreshold: 100%

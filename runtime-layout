@@ -8,8 +8,8 @@ Jetson Orin Nano (RHEL9.4 bootc host)
 ├── Persistent host storage
 │   └── /var/lib/mangey-moose/
 │       └── models/                     ── shared volume for .pt and .engine
-│           ├── yolov8n.pt              ── shipped or downloaded once
-│           └── yolov8n.engine          ── built on-device by model-init
+│           ├── yolo26n.pt              ── shipped inside model-init (not on the host)
+│           └── yolo26n.engine          ── built on-device by model-init
 │
 ├── Container: mediamtx                  [ALWAYS ON]
 │   ├── Network: host

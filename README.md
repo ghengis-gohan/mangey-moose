@@ -72,8 +72,8 @@ Four images, each with one job. Built natively on the Jetson (`aarch64`), pushed
 | Container | Lifecycle | GPU | Role |
 |---|---|---|---|
 | **`mediamtx`** | always on | no | RTSP/WHEP/HLS server. The streaming anchor — receives one publisher, fans out to any number of viewers. |
-| **`model-init`** | run once, exits | yes | Compiles `yolov8n.pt` → a TensorRT `.engine` tuned for *this exact* GPU + TRT version, writes it to the shared model volume, then exits. |
-| **`yolo-infer`** | swappable **(A)** | yes | YOLOv8n object detection on the live camera feed → annotated H.264 → publishes to `/infer`. |
+| **`model-init`** | run once, exits | yes | Compiles `yolo26n.pt` → a TensorRT `.engine` tuned for *this exact* GPU + TRT version, writes it to the shared model volume, then exits. |
+| **`yolo-infer`** | swappable **(A)** | yes | YOLO26n object detection on the live camera feed → annotated H.264 → publishes to `/infer`. |
 | **`traffic-infer`** | swappable **(B)** | yes | DeepStream/ResNet traffic-classification pipeline → publishes to the **same** `/infer` path. |
 
 Only **one** inference workload runs at a time. `mediamtx` and the model volume are shared infrastructure that both workloads depend on.
@@ -154,8 +154,8 @@ mangey-moose/
 │   └── compose/                #   standalone composes — local testing convenience only
 │
 ├── mediamtx/                   # Streaming anchor (Go, multi-arch, no GPU)
-├── model-init/                 # One-shot TRT engine export (ships yolov8n.pt)
-├── yolo-infer/                 # YOLOv8n inference → RTSP   (workload A)
+├── model-init/                 # One-shot TRT engine export (ships yolo26n.pt)
+├── yolo-infer/                 # YOLO26n inference → RTSP   (workload A)
 ├── traffic-infer/              # DeepStream traffic inference → RTSP   (workload B)
 │
 ├── ground-station/
@@ -252,14 +252,14 @@ flightctl login https://api.flightctl.<your-domain> --web
 
 # Boot the Jetson → it appears as pending enrollment → approve & label it
 flightctl get devices
-flightctl label device <device-name> purpose=drone-edge inference=yolo
+flightctl label device <device-name> purpose=mangey-moose inference=yolo   # must match fleet-specs selectors
 
-# Apply the fleet (selector matches the labels above)
-flightctl apply -f fleet-specs/fleet-yolo.yaml
-flightctl get fleet drone-edge-yolo -o yaml
+# Apply all three fleets once (selectors match the labels above)
+for f in fleet-specs/fleet-{yolo,traffic,imu}.yaml; do flightctl apply -f $f; done
+flightctl get fleet mangey-moose-yolo -o yaml
 ```
 
-RHEM confirms the OS image matches, runs `model-init` once, then brings up `yolo-infer` + `mediamtx`.
+RHEM runs `model-init` once, then brings up `yolo-infer` + `mediamtx`. (OS image management is commented out in the fleet specs for the demo — see the note in `fleet-yolo.yaml`.)
 
 </details>
 
@@ -270,7 +270,7 @@ RHEM confirms the OS image matches, runs `model-init` once, then brings up `yolo
 Prove the camera → inference → MediaMTX → ground-station path on the bench first. On the Jetson:
 
 ```bash
-bash model_init_test.sh     # builds yolov8n.engine, watch for "[model-init] done."
+bash model_init_test.sh     # builds yolo26n.engine, watch for "[model-init] done."
 bash mediamtx_test.sh       # start the streaming anchor
 bash yolo_infer_test.sh     # start inference, publishes to /infer
 ```
@@ -279,7 +279,8 @@ Then from your ground-station laptop:
 
 ```bash
 export JETSON_IP=<jetson-ip>
-bash ground-station/view-stream.sh        # ffplay, low-latency RTSP
+bash ground-station/view-stream.sh        # ffplay, RTSP (also: `whep` / `hls` modes)
+# IMU dashboard (when inference=imu): http://<jetson-ip>:8080/
 # …or open http://<jetson-ip>:8889/infer  in a browser (WHEP, sub-second)
 ```
 
@@ -288,9 +289,12 @@ bash ground-station/view-stream.sh        # ffplay, low-latency RTSP
 ## 🔀 Swapping workloads
 
 ```bash
-# yolo  →  traffic
-flightctl apply -f fleet-specs/fleet-traffic.yaml      # one-time
-flightctl label device <device-name> inference=traffic --overwrite
+# yolo  →  traffic  →  imu  (any order; relabel = swap)
+./swap_workflow.sh traffic
+./swap_workflow.sh imu
+./swap_workflow.sh yolo
+# (wraps: flightctl label device/<name> inference=<target> --overwrite, or the
+#  get/apply fallback if your CLI lacks `label`; see the script header)
 ```
 
 The device drops out of `fleet-yolo`'s selector and into `fleet-traffic`'s. `yolo-infer` comes down, `traffic-infer` comes up, MediaMTX keeps running, and `rtsp://<jetson>:8554/infer` never changes. Flip `inference=yolo` to roll back.
